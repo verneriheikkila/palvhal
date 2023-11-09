@@ -1,0 +1,32 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+$minion = <<MINION
+sudo apt-get update
+sudo apt-get -qy install salt-minion
+echo "master: 192.168.12.3">/etc/salt/minion
+sudo service salt-minion restart
+echo "See also: https://terokarvinen.com/2023/salt-vagrant/"
+MINION
+
+$master = <<MASTER
+sudo apt-get update
+sudo apt-get -qy install salt-master
+echo "See also: https://terokarvinen.com/2023/salt-vagrant/"
+MASTER
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "debian/bullseye64"
+
+  config.vm.define "t001" do |t001|
+    t001.vm.provision "shell", inline: $minion
+    t001.vm.network "private_network", type: "dhcp", virtualbox__intnet: "mynetwork"
+    t001.vm.hostname = "t001"
+  end
+
+  config.vm.define "tmaster", primary: true do |tmaster|
+    tmaster.vm.provision "shell", inline: $master
+    tmaster.vm.network "private_network", type: "dhcp", virtualbox__intnet: "mynetwork"
+    tmaster.vm.hostname = "tmaster"
+  end
+end
